@@ -1,12 +1,15 @@
 package com.anionianonion.damage_pipeline_api;
 
 import com.anionianonion.advanced_arpg_attributes_api.StatContainer;
+import com.anionianonion.advanced_arpg_attributes_api.api.AdvancedARPGAttributesAPI;
 import com.anionianonion.damage_pipeline_api.api.IPreHitDamageStep;
 import com.anionianonion.damage_pipeline_api.api.IDamageStep;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 
@@ -37,35 +40,60 @@ public class DamagePipeline {
 
     /**
      * Should be used within your event handler class that handles damage, within your LivingAttackEvent.
+     * @param originAttackerStatContainer the StatContainer of the attacker's summoner/owner/etc. Pass in a new instance of the statContainer if not found.
      * @return false if the hit is counted as a miss, and true if it succeeded.
      */
-    public static boolean didHitSucceed(LivingEntity attacker, LivingEntity defender, DamageContext damageContext) {
+    public static boolean didHitSucceed(StatContainer originAttackerStatContainer, StatContainer attackerStatContainer, StatContainer defenderStatContainer, DamageContext damageContext) {
         boolean hitSucceeded = true;
-        for(var prehitDamageStep : preHitDamageSteps) {
-            hitSucceeded = prehitDamageStep.apply(attacker, defender, damageContext);
-            if(!hitSucceeded) break;
+
+        if(damageContext.getSource().equals("self")) {
+            for(var preHitDamageStep : preHitDamageSteps) {
+                hitSucceeded = preHitDamageStep.apply(attackerStatContainer, defenderStatContainer, damageContext);
+                if(!hitSucceeded) break;
+            }
         }
+        else if(originAttackerStatContainer != null) {
+            HashMap<String, String> tagsToReplaceToReplacementMap = new HashMap<>();
+            tagsToReplaceToReplacementMap.put(damageContext.getSource(), "self");
+            var mergedStatContainer = AdvancedARPGAttributesAPI.getNewStatContainerByRemappingBtoA(attackerStatContainer, originAttackerStatContainer, tagsToReplaceToReplacementMap);
+
+            for(var preHitDamageStep : preHitDamageSteps) {
+                hitSucceeded = preHitDamageStep.apply(mergedStatContainer, defenderStatContainer, damageContext);
+                if(!hitSucceeded) break;
+            }
+        }
+        else {
+            throw new IllegalStateException(String.format("Damage context's source is \"%s\" which isn't registered! You must let the authors of the mod know, and if you are the author, you must do DamagePipelineAPI.addValidDamageSourceTypeTag(\"%s\").", damageContext.getSource(), damageContext.getSource()));
+        }
+
         return hitSucceeded;
     }
 
     /**
-     * @param attacker
-     * @param defender
-     * @param attackerStatContainer can get from attacker.getCapability(StatContainerCapability.INSTANCE).resolve().orElse(null), but it's here for accessibility
-     * @param defenderStatContainer can get from defender.getCapability(StatContainerCapability.INSTANCE).resolve().orElse(null), but it's here for accessibility
-     * @param directEntity the direct entity that triggered the attack
-     * @param damageContext
+     * @param originAttackerStatContainer the StatContainer of the attacker's summoner/owner/etc. Pass in a new instance of the statContainer if not found.
      * @return damage to be dealt
      */
-    public static float dealDamage(LivingEntity attacker, LivingEntity defender,
-                                   StatContainer attackerStatContainer, StatContainer defenderStatContainer,
-                                   Entity directEntity,
-                                   DamageContext damageContext) {
+    public static float dealDamage(StatContainer originAttackerStatContainer, @NotNull StatContainer attackerStatContainer, @NotNull StatContainer defenderStatContainer, @NotNull DamageContext damageContext) {
 
         var damage = 0f;
-        for(var damageStep : mitigationSteps) {
-            damage = damageStep.apply(damage, attacker, defender, attackerStatContainer, defenderStatContainer, directEntity, damageContext);
+        if(damageContext.getSource().equals("self")) {
+            for(var damageStep : mitigationSteps) {
+                damage = damageStep.apply(damage, attackerStatContainer, defenderStatContainer, damageContext);
+            }
         }
+        else if(originAttackerStatContainer != null) {
+            HashMap<String, String> tagsToReplaceToReplacementMap = new HashMap<>();
+            tagsToReplaceToReplacementMap.put(damageContext.getSource(), "self");
+            var mergedStatContainer = AdvancedARPGAttributesAPI.getNewStatContainerByRemappingBtoA(attackerStatContainer, originAttackerStatContainer, tagsToReplaceToReplacementMap);
+
+            for(var damageStep : mitigationSteps) {
+                damage = damageStep.apply(damage, mergedStatContainer, defenderStatContainer, damageContext);
+            }
+        }
+        else {
+            throw new IllegalStateException(String.format("Damage context's source is \"%s\" which isn't registered! You must let the authors of the mod know, and if you are the author, you must do DamagePipelineAPI.addValidDamageSourceTypeTag(\"%s\").", damageContext.getSource(), damageContext.getSource()));
+        }
+
 
         return damage;
     }

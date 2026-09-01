@@ -10,6 +10,6 @@ public interface IPreHitDamageStep {
      * This condition is iteratively evaluated by DamagePipeline#.
      * @return false if the hit is counted as a miss, and true if it succeeded.
      */
-    boolean apply(LivingEntity attacker, LivingEntity defender, DamageContext damageContext);
+    boolean apply(StatContainer attackerStatContainer, StatContainer defenderStatContainer, DamageContext damageContext);
 
 }

@@ -11,13 +11,11 @@ public class DamageContext {
 
     private HashSet<String> tags = new HashSet<>();
     private String element;
-    private String source;
+    private String source = "self";
     private float projectileSpeed;
 
     //
     private final ElementalsAPI elementalAPI = new ElementalsAPI();
-    private final AdvancedARPGAttributesAPI aaaAPI = new AdvancedARPGAttributesAPI();
-    private final DamagePipelineAPI dpAPI = new DamagePipelineAPI();
 
     public DamageContext() {
         addTag("damage");
@@ -35,7 +33,7 @@ public class DamageContext {
 
         //check only tags and adds non-elements, because we already checked elements in the if statement above
         unchecked.forEach(tag -> {
-            if(aaaAPI.getValidTags().contains(tag) && !elementalAPI.getAllElements().contains(tag)) finalSet.add(tag);
+            if(AdvancedARPGAttributesAPI.getValidTags().contains(tag) && !elementalAPI.getAllElements().contains(tag)) finalSet.add(tag);
         });
 
         this.tags = finalSet;
@@ -55,13 +53,13 @@ public class DamageContext {
             finalSet.add(element);
         }
 
-        if(dpAPI.getValidDamageSourceTypeTags().contains(source) && !unchecked.contains(source)) {
+        if(DamagePipelineAPI.getValidDamageSourceTypeTags().contains(source) && !unchecked.contains(source)) {
             finalSet.add(source);
         }
 
         //check only tags and adds non-elements, because we already checked elements in the if statement above
         unchecked.forEach(tag -> {
-            if(aaaAPI.getValidTags().contains(tag) && !elementalAPI.getAllElements().contains(tag)) finalSet.add(tag);
+            if(AdvancedARPGAttributesAPI.getValidTags().contains(tag) && !elementalAPI.getAllElements().contains(tag)) finalSet.add(tag);
         });
 
         this.tags = finalSet;
@@ -75,7 +73,7 @@ public class DamageContext {
     }
 
     public void addTag(String damageTag) {
-        if(aaaAPI.getValidTags().contains(damageTag) && !elementalAPI.getAllElements().contains(damageTag)) this.tags.add(damageTag);
+        if(AdvancedARPGAttributesAPI.getValidTags().contains(damageTag) && !elementalAPI.getAllElements().contains(damageTag)) this.tags.add(damageTag);
     }
 
     public void setProjectileSpeed(float projectileSpeed) {
@@ -104,8 +102,7 @@ public class DamageContext {
     public String getSource() { return this.source; }
 
     public void setSource(String source) {
-        DamagePipelineAPI dpAPI = new DamagePipelineAPI();
-        if(dpAPI.getValidDamageSourceTypeTags().contains(source)) {
+        if(DamagePipelineAPI.getValidDamageSourceTypeTags().contains(source)) {
             this.tags.add(source);
             this.tags.remove(this.source);
             this.source = source;

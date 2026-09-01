@@ -12,14 +12,14 @@ import java.util.Set;
 
 public class DamagePipelineAPI {
 
-    public List<IPreHitDamageStep> getPreHitDamageSteps() { return DamagePipeline.getPreHitDamageSteps(); }
+    public static List<IPreHitDamageStep> getPreHitDamageSteps() { return DamagePipeline.getPreHitDamageSteps(); }
 
-    public List<IDamageStep> getDamageSteps() { return DamagePipeline.getMitigationSteps(); }
+    public static List<IDamageStep> getDamageSteps() { return DamagePipeline.getMitigationSteps(); }
 
-    public void addPreHitDamageStep(IPreHitDamageStep preHitDamageStep) {
+    public static void addPreHitDamageStep(IPreHitDamageStep preHitDamageStep) {
         DamagePipeline.addPreHitDamageStep(preHitDamageStep);
     }
-    public void addDamageStep(IDamageStep damageStep) {
+    public static void addDamageStep(IDamageStep damageStep) {
         DamagePipeline.addDamageStep(damageStep);
     }
 
@@ -27,7 +27,6 @@ public class DamagePipelineAPI {
      * if the item's class is found within this mod's registered weapon classes and tags, then we add the corresponding tag into the damage context.
      */
     public static void determineAndAddWeaponDamageTagToContext(Item itemInHand, DamageContext damageContext) {
-        AdvancedARPGAttributesAPI aaaAPI = new AdvancedARPGAttributesAPI();
 
         var itemClass = itemInHand.getClass();
         List<Class<?>> parentClasses = new ArrayList<>();
@@ -40,17 +39,17 @@ public class DamagePipelineAPI {
         while (currentClass != Object.class);
 
         for(Class<?> superclass : parentClasses) {
-            if(aaaAPI.getClassesOfWeaponItemsToTag().containsKey(superclass))
-                damageContext.addTag(aaaAPI.getClassesOfWeaponItemsToTag().get(superclass));
+            if(AdvancedARPGAttributesAPI.getClassesOfWeaponItemsToTag().containsKey(superclass))
+                damageContext.addTag(AdvancedARPGAttributesAPI.getClassesOfWeaponItemsToTag().get(superclass));
         }
 
     }
 
-    public Set<String> getValidDamageSourceTypeTags() {
+    public static Set<String> getValidDamageSourceTypeTags() {
         return ValidSources.getValidDamageSourceTypeTags();
     }
 
-    public void addValidDamageSourceTypeTag(String newTag) {
+    public static void addValidDamageSourceTypeTag(String newTag) {
         ValidSources.addValidDamageSourceTypeTag(newTag);
     }
 }
