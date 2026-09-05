@@ -26,14 +26,14 @@ public class DamageContext {
         HashSet<String> unchecked = new HashSet<>(List.of(damageTags));
         HashSet<String> finalSet = new HashSet<>();
 
-        if(elementalAPI.getAllElements().contains(element)) {
+        if(ElementalsAPI.getAllElementNames().contains(element)) {
             finalSet.add(element);
             this.element = element;
         }
 
         //check only tags and adds non-elements, because we already checked elements in the if statement above
         unchecked.forEach(tag -> {
-            if(AdvancedARPGAttributesAPI.getValidTags().contains(tag) && !elementalAPI.getAllElements().contains(tag)) finalSet.add(tag);
+            if(AdvancedARPGAttributesAPI.getValidTags().contains(tag) && !ElementalsAPI.getAllElementNames().contains(tag)) finalSet.add(tag);
         });
 
         this.tags = finalSet;
@@ -49,7 +49,7 @@ public class DamageContext {
         HashSet<String> finalSet = new HashSet<>();
 
         //automatically adds the element if it's valid, and damageTags doesn't contain it.
-        if(elementalAPI.getAllElements().contains(element) && !unchecked.contains(element)) {
+        if(ElementalsAPI.getAllElementNames().contains(element) && !unchecked.contains(element)) {
             finalSet.add(element);
         }
 
@@ -59,7 +59,7 @@ public class DamageContext {
 
         //check only tags and adds non-elements, because we already checked elements in the if statement above
         unchecked.forEach(tag -> {
-            if(AdvancedARPGAttributesAPI.getValidTags().contains(tag) && !elementalAPI.getAllElements().contains(tag)) finalSet.add(tag);
+            if(AdvancedARPGAttributesAPI.getValidTags().contains(tag) && !ElementalsAPI.getAllElementNames().contains(tag)) finalSet.add(tag);
         });
 
         this.tags = finalSet;
@@ -73,7 +73,7 @@ public class DamageContext {
     }
 
     public void addTag(String damageTag) {
-        if(AdvancedARPGAttributesAPI.getValidTags().contains(damageTag) && !elementalAPI.getAllElements().contains(damageTag)) this.tags.add(damageTag);
+        if(AdvancedARPGAttributesAPI.getValidTags().contains(damageTag) && !ElementalsAPI.getAllElementNames().contains(damageTag)) this.tags.add(damageTag);
     }
 
     public void setProjectileSpeed(float projectileSpeed) {
@@ -89,7 +89,7 @@ public class DamageContext {
     }
 
     public void setElement(String element) {
-        if(elementalAPI.getAllElements().contains(element)) {
+        if(ElementalsAPI.getAllElementNames().contains(element)) {
             //add new element id to tags
             this.tags.add(element);
             //removes old element from tags
