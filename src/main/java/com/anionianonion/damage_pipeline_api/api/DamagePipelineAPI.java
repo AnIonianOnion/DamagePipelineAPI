@@ -24,25 +24,45 @@ public class DamagePipelineAPI {
     }
 
     /**
-     * if the item's class is found within this mod's registered weapon classes and tags, then we add the corresponding tag into the damage context.
+     * if the item's class is found within this mod's registered melee weapon classes-to-tags mapper, then we add the corresponding tag into the damage context.
      */
-    public static void determineAndAddWeaponDamageTagToContext(Item itemInHand, DamageContext damageContext) {
+    public static void determineAndAddMeleeWeaponDamageTagToContext(Item itemInHand, DamageContext damageContext) {
 
+        var classesAndParentClasses = getItemClassesAndParentClasses(itemInHand);
+        for(Class<?> type : classesAndParentClasses) {
+            if(AdvancedARPGAttributesAPI.getClassesOfMeleeWeaponItemsToTag().containsKey(type)) {
+                damageContext.addTag(AdvancedARPGAttributesAPI.getClassesOfMeleeWeaponItemsToTag().get(type));
+                break;
+            }
+        }
+    }
+
+    /**
+     * if the item's class is found within this mod's registered ranged weapon classes-to-tags mapper, then we add the corresponding tag into the damage context.
+     */
+    public static void determineAndAddRangedWeaponDamageTagToContext(Item itemInHand, DamageContext damageContext) {
+
+        var classesAndParentClasses = getItemClassesAndParentClasses(itemInHand);
+        for(Class<?> type : classesAndParentClasses) {
+            if(AdvancedARPGAttributesAPI.getClassesOfRangedWeaponItemsToTag().containsKey(type)) {
+                damageContext.addTag(AdvancedARPGAttributesAPI.getClassesOfRangedWeaponItemsToTag().get(type));
+                break;
+            }
+        }
+    }
+
+    private static List<Class<?>> getItemClassesAndParentClasses(Item itemInHand) {
         var itemClass = itemInHand.getClass();
-        List<Class<?>> parentClasses = new ArrayList<>();
+        List<Class<?>> classesAndParentClasses = new ArrayList<>();
 
         Class<?> currentClass = itemClass;
         do {
-            parentClasses.add(currentClass);
+            classesAndParentClasses.add(currentClass);
             currentClass = currentClass.getSuperclass();
         }
         while (currentClass != Object.class);
 
-        for(Class<?> superclass : parentClasses) {
-            if(AdvancedARPGAttributesAPI.getClassesOfWeaponItemsToTag().containsKey(superclass))
-                damageContext.addTag(AdvancedARPGAttributesAPI.getClassesOfWeaponItemsToTag().get(superclass));
-        }
-
+        return classesAndParentClasses;
     }
 
     public static Set<String> getValidDamageSourceTypeTags() {
