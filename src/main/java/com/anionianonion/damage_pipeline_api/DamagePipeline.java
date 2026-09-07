@@ -57,6 +57,9 @@ public class DamagePipeline {
             tagsToReplaceToReplacementMap.put(damageContext.getSource(), "self");
             var mergedStatContainer = AdvancedARPGAttributesAPI.getNewStatContainerByRemappingBtoA(attackerStatContainer, originAttackerStatContainer, tagsToReplaceToReplacementMap);
 
+            //make sure to reset and use minion's attributes as the "self" instead of the minion's minion attributes
+            //todo: fix damageContext.setSource("self") not working;
+
             for(var preHitDamageStep : preHitDamageSteps) {
                 hitSucceeded = preHitDamageStep.apply(mergedStatContainer, defenderStatContainer, damageContext);
                 if(!hitSucceeded) break;
@@ -84,14 +87,25 @@ public class DamagePipeline {
         else if(originAttackerStatContainer != null) {
             HashMap<String, String> tagsToReplaceToReplacementMap = new HashMap<>();
             tagsToReplaceToReplacementMap.put(damageContext.getSource(), "self");
+
+            //merged summoner's minion bonus stats onto minion's stats
             var mergedStatContainer = AdvancedARPGAttributesAPI.getNewStatContainerByRemappingBtoA(attackerStatContainer, originAttackerStatContainer, tagsToReplaceToReplacementMap);
+
+            //no need to set DamageContext#setSource a second time, since we've set it in didHitSucceed which should be called in LivingAttackEvent.
+            //actually, we might need to set it if didHitSucceed isn't called for any reason
+            //todo: fix damageContext.setSource("self") not working;
 
             for(var damageStep : mitigationSteps) {
                 damage = damageStep.apply(damage, mergedStatContainer, defenderStatContainer, damageContext);
             }
         }
+        //(damage context source != "self" && origin attacker stat container == null) -> damage context source isn't registered?
         else {
-            throw new IllegalStateException(String.format("Damage context's source is \"%s\" which isn't registered! You must let the authors of the mod know, and if you are the author, you must do DamagePipelineAPI.addValidDamageSourceTypeTag(\"%s\").", damageContext.getSource(), damageContext.getSource()));
+            throw new IllegalStateException(String.format("Damage context's source is \"%s\", " +
+                    "which isn't \"self\" but the stat container of the attacker's summoner/owner is also null. " +
+                    "None of which are bad on its own, but when taken together is an illegal state. " +
+                    "You must let the authors of the mod know, and if you are the author, " +
+                    "you must do DamagePipelineAPI.addValidDamageSourceTypeTag(\"%s\").", damageContext.getSource(), damageContext.getSource()));
         }
 
 

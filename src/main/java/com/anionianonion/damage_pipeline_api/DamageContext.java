@@ -14,32 +14,12 @@ public class DamageContext {
     private String source = "self";
     private float projectileSpeed;
 
-    //
-    private final ElementalsAPI elementalAPI = new ElementalsAPI();
 
     public DamageContext() {
+        //addTag("self");
         addTag("damage");
     }
 
-    //this was the main constructor, but I decided it was beneficial in the damage capability provider to store a damage context without any args, and then set it later
-    public DamageContext(String element, String... damageTags) {
-        HashSet<String> unchecked = new HashSet<>(List.of(damageTags));
-        HashSet<String> finalSet = new HashSet<>();
-
-        if(ElementalsAPI.getAllElementNames().contains(element)) {
-            finalSet.add(element);
-            this.element = element;
-        }
-
-        //check only tags and adds non-elements, because we already checked elements in the if statement above
-        unchecked.forEach(tag -> {
-            if(AdvancedARPGAttributesAPI.getValidTags().contains(tag) && !ElementalsAPI.getAllElementNames().contains(tag)) finalSet.add(tag);
-        });
-
-        this.tags = finalSet;
-
-        addTag("damage");
-    }
     public HashSet<String> getTags() {
         return this.tags;
     }
@@ -69,7 +49,8 @@ public class DamageContext {
 
     public void clearTags() {
         this.tags.clear();
-        this.tags.add("damage");
+        //this.tags.add("self");
+        addTag("damage");
     }
 
     public void addTag(String damageTag) {
@@ -89,7 +70,9 @@ public class DamageContext {
     }
 
     public void setElement(String element) {
-        if(ElementalsAPI.getAllElementNames().contains(element)) {
+
+        //updated condition to match what I learned from setSource
+        if(ElementalsAPI.getAllElementNames().contains(element) && !element.equals(this.element)) {
             //add new element id to tags
             this.tags.add(element);
             //removes old element from tags
@@ -102,7 +85,9 @@ public class DamageContext {
     public String getSource() { return this.source; }
 
     public void setSource(String source) {
-        if(DamagePipelineAPI.getValidDamageSourceTypeTags().contains(source)) {
+
+        //because tags is a set, tags will not add source if it already contains source, and will remove source from the tags. And because each AdvancedARPGAttribute has the source included into its tags as well, if source is missing from our tags, the attribute won't be included.
+        if(DamagePipelineAPI.getValidDamageSourceTypeTags().contains(source) && !source.equals(this.source)) {
             this.tags.add(source);
             this.tags.remove(this.source);
             this.source = source;
