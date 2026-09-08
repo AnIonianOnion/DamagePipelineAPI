@@ -49,7 +49,6 @@ public class DamageContext {
 
     public void clearTags() {
         this.tags.clear();
-        //this.tags.add("self");
         addTag("damage");
     }
 
@@ -92,5 +91,11 @@ public class DamageContext {
             this.tags.remove(this.source);
             this.source = source;
         }
+    }
+
+    public void reset() {
+        clearTags();
+        element = null;
+        source = "self";
     }
 }

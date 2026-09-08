@@ -2,6 +2,7 @@ package com.anionianonion.damage_pipeline_api.api;
 
 import com.anionianonion.advanced_arpg_attributes_api.StatContainer;
 import com.anionianonion.damage_pipeline_api.DamageContext;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 
 public interface IPreHitDamageStep {
@@ -12,4 +13,5 @@ public interface IPreHitDamageStep {
      */
     boolean apply(StatContainer attackerStatContainer, StatContainer defenderStatContainer, DamageContext damageContext);
 
+    //boolean apply(Entity attacker, LivingEntity defender, DamageContext damageContext);
 }
