@@ -11,12 +11,11 @@ public class DamageContext {
 
     private HashSet<String> tags = new HashSet<>();
     private String element;
-    private String source = "self";
+    private String source;
     private float projectileSpeed;
 
 
     public DamageContext() {
-        //addTag("self");
         addTag("damage");
     }
 
@@ -53,7 +52,10 @@ public class DamageContext {
     }
 
     public void addTag(String damageTag) {
-        if(AdvancedARPGAttributesAPI.getValidTags().contains(damageTag) && !ElementalsAPI.getAllElementNames().contains(damageTag)) this.tags.add(damageTag);
+        if(AdvancedARPGAttributesAPI.getValidTags().contains(damageTag)
+                && !ElementalsAPI.getAllElementNames().contains(damageTag)
+                && !DamagePipelineAPI.getValidDamageSourceTypeTags().contains(damageTag))
+            this.tags.add(damageTag);
     }
 
     public void setProjectileSpeed(float projectileSpeed) {
@@ -96,6 +98,7 @@ public class DamageContext {
     public void reset() {
         clearTags();
         element = null;
-        source = "self";
+        source = null;
+        setSource("self");
     }
 }

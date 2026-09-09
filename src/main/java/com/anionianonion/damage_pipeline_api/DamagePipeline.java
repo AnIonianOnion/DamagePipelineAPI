@@ -7,10 +7,13 @@ import com.anionianonion.damage_pipeline_api.api.IPreHitDamageStep;
 import com.anionianonion.damage_pipeline_api.api.IDamageStep;
 import com.anionianonion.damage_pipeline_api.capability.DamageContextCapability;
 import com.anionianonion.damage_pipeline_api.util.RandomHelpers;
+import com.anionianonion.elementals_api.api.ElementalsAPI;
+import io.redspace.ironsspellbooks.api.events.SpellDamageEvent;
 import io.redspace.ironsspellbooks.capabilities.magic.SummonManager;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraftforge.event.entity.living.LivingAttackEvent;
+import net.minecraftforge.event.entity.living.LivingDamageEvent;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
@@ -43,87 +46,6 @@ public class DamagePipeline {
         mitigationSteps.add(damageStep);
     }
 
-    /**
-     * Should be used within your event handler class that handles damage, within your LivingAttackEvent.
-     * @param originAttackerStatContainer the StatContainer of the attacker's summoner/owner/etc. Pass in a new instance of the statContainer if not found.
-     * @return false if the hit is counted as a miss, and true if it succeeded.
-     */
-    @Deprecated
-    public static boolean didHitSucceed(StatContainer originAttackerStatContainer, StatContainer attackerStatContainer, StatContainer defenderStatContainer, DamageContext damageContext) {
-        boolean hitSucceeded = true;
-
-        if(damageContext.getSource().equals("self")) {
-            for(var preHitDamageStep : preHitDamageSteps) {
-                hitSucceeded = preHitDamageStep.apply(attackerStatContainer, defenderStatContainer, damageContext);
-                if(!hitSucceeded) break;
-            }
-        }
-        else if(originAttackerStatContainer != null) {
-            HashMap<String, String> tagsToReplaceToReplacementMap = new HashMap<>();
-            tagsToReplaceToReplacementMap.put(damageContext.getSource(), "self");
-            var mergedStatContainer = AdvancedARPGAttributesAPI.getNewStatContainerByRemappingBtoA(attackerStatContainer, originAttackerStatContainer, tagsToReplaceToReplacementMap);
-
-            //make sure to reset and use minion's attributes as the "self" instead of the minion's minion attributes
-            //todo: fix damageContext.setSource("self") not working;
-            /*
-            I think the reason why damageContext.setSource("self") isn't working for getting the attributes calculated, is that
-            if we change the damageContext to "self" here, it will stay "self" and "self" will be used when dealDamage is called, so it will only use the attacker's attributes
-            instead of the summoner
-             */
-
-            for(var preHitDamageStep : preHitDamageSteps) {
-                hitSucceeded = preHitDamageStep.apply(mergedStatContainer, defenderStatContainer, damageContext);
-                if(!hitSucceeded) break;
-            }
-        }
-        else {
-            throw new IllegalStateException(String.format("Damage context's source is \"%s\" which isn't registered! You must let the authors of the mod know, and if you are the author, you must do DamagePipelineAPI.addValidDamageSourceTypeTag(\"%s\").", damageContext.getSource(), damageContext.getSource()));
-        }
-
-        return hitSucceeded;
-    }
-
-    /**
-     * @param originAttackerStatContainer the StatContainer of the attacker's summoner/owner/etc. Pass in a new instance of the statContainer if not found.
-     * @return damage to be dealt
-     */
-    @Deprecated
-    public static float dealDamage(StatContainer originAttackerStatContainer, @NotNull StatContainer attackerStatContainer, @NotNull StatContainer defenderStatContainer, @NotNull DamageContext damageContext) {
-
-        var damage = 0f;
-        if(damageContext.getSource().equals("self")) {
-            for(var damageStep : mitigationSteps) {
-                damage = damageStep.apply(damage, attackerStatContainer, defenderStatContainer, damageContext);
-            }
-        }
-        else if(originAttackerStatContainer != null) {
-            HashMap<String, String> tagsToReplaceToReplacementMap = new HashMap<>();
-            tagsToReplaceToReplacementMap.put(damageContext.getSource(), "self");
-
-            //merged summoner's minion bonus stats onto minion's stats
-            var mergedStatContainer = AdvancedARPGAttributesAPI.getNewStatContainerByRemappingBtoA(attackerStatContainer, originAttackerStatContainer, tagsToReplaceToReplacementMap);
-
-            //no need to set DamageContext#setSource a second time, since we've set it in didHitSucceed which should be called in LivingAttackEvent.
-            //actually, we might need to set it if didHitSucceed isn't called for any reason
-            //todo: fix damageContext.setSource("self") not working;
-
-            for(var damageStep : mitigationSteps) {
-                damage = damageStep.apply(damage, mergedStatContainer, defenderStatContainer, damageContext);
-            }
-        }
-        //(damage context source != "self" && origin attacker stat container == null) -> damage context source isn't registered?
-        else {
-            throw new IllegalStateException(String.format("Damage context's source is \"%s\", " +
-                    "which isn't \"self\" but the stat container of the attacker's summoner/owner is also null. " +
-                    "None of which are bad on its own, but when taken together is an illegal state. " +
-                    "You must let the authors of the mod know, and if you are the author, " +
-                    "you must do DamagePipelineAPI.addValidDamageSourceTypeTag(\"%s\").", damageContext.getSource(), damageContext.getSource()));
-        }
-
-
-        return damage;
-    }
-
     //decided to use LivingAttackEvent from now on, because every variable we used in the deprecated method can be derived from it.
     public static boolean didHitSucceed(LivingAttackEvent e) {
 
@@ -153,7 +75,7 @@ public class DamagePipeline {
             if(minionStatContainer == null) return true;
 
             HashMap<String, String> tagsToReplaceToReplacementMap = new HashMap<>();
-            tagsToReplaceToReplacementMap.put(damageContext.getSource(), "self");
+            tagsToReplaceToReplacementMap.put("minion", "self");
             var mergedStatContainer = AdvancedARPGAttributesAPI.getNewStatContainerByRemappingBtoA(minionStatContainer, livingAttackerOrCasterStatContainer, tagsToReplaceToReplacementMap);
 
             for(var preHitStep : preHitDamageSteps) {
@@ -168,7 +90,7 @@ public class DamagePipeline {
             var summonerStatContainer = livingSummoner.getCapability(StatContainerCapability.INSTANCE).resolve().orElse(null);
 
             HashMap<String, String> tagsToReplaceToReplacementMap = new HashMap<>();
-            tagsToReplaceToReplacementMap.put(damageContext.getSource(), "self");
+            tagsToReplaceToReplacementMap.put("minion", "self");
             var mergedStatContainer = AdvancedARPGAttributesAPI.getNewStatContainerByRemappingBtoA(livingAttackerOrCasterStatContainer, summonerStatContainer, tagsToReplaceToReplacementMap);
 
             for(var preHitStep : preHitDamageSteps) {
@@ -195,5 +117,79 @@ public class DamagePipeline {
         }
 
         return didHitSucceed;
+    }
+
+    //based on the method above. But whereas the default unmodified return value is true above (because it's a boolean, and that is what happens when damage is dealt),
+    //this time the default return value is the damage amount it was initially.
+    public static float dealDamage(LivingDamageEvent e) {
+        Entity attacker = e.getSource().getEntity();
+        Entity directAttacker = e.getSource().getDirectEntity();
+        LivingEntity livingDefender = e.getEntity();
+
+        var initialDamage = e.getAmount();
+
+        if(!(attacker instanceof LivingEntity livingAttacker)) return initialDamage;
+
+        DamageContext damageContext = livingAttacker.getCapability(DamageContextCapability.INSTANCE).resolve().orElse(null);
+        StatContainer livingAttackerStatContainer = livingAttacker.getCapability(StatContainerCapability.INSTANCE).resolve().orElse(null);
+        StatContainer livingDefenderStatContainer = livingDefender.getCapability(StatContainerCapability.INSTANCE).resolve().orElse(null);
+
+        if(damageContext == null || livingAttackerStatContainer == null || livingDefenderStatContainer == null) return initialDamage;
+
+        float totalDamage = 0;
+
+        if(RandomHelpers.isMinion(directAttacker)) {
+            var minionStatContainer = directAttacker.getCapability(StatContainerCapability.INSTANCE).resolve().orElse(null);
+            if(minionStatContainer == null) return initialDamage;
+
+            HashMap<String, String> tagsToReplaceToReplacementMap = new HashMap<>();
+            tagsToReplaceToReplacementMap.put("minion", "self");
+
+            var mergedStatContainer = AdvancedARPGAttributesAPI.getNewStatContainerByRemappingBtoA(minionStatContainer, livingAttackerStatContainer, tagsToReplaceToReplacementMap);
+
+            for(var element : ElementalsAPI.getAllElementNames()) {
+                damageContext.setElement(element);
+                float elementDamage = 0;
+                for(var damageStep : mitigationSteps) {
+                    elementDamage = damageStep.apply(elementDamage, mergedStatContainer, livingDefenderStatContainer, damageContext);
+                }
+                totalDamage += elementDamage;
+            }
+        }
+        else if (RandomHelpers.isMinion(livingAttacker)) {
+            var summoner = SummonManager.getOwner(livingAttacker);
+            if(!(summoner instanceof LivingEntity livingSummoner)) return initialDamage;
+
+            var summonerStatContainer = livingSummoner.getCapability(StatContainerCapability.INSTANCE).resolve().orElse(null);
+
+            HashMap<String, String> tagsToReplaceToReplacementMap = new HashMap<>();
+            tagsToReplaceToReplacementMap.put("minion", "self");
+            var mergedStatContainer = AdvancedARPGAttributesAPI.getNewStatContainerByRemappingBtoA(livingAttackerStatContainer, summonerStatContainer, tagsToReplaceToReplacementMap);
+
+            for(var element : ElementalsAPI.getAllElementNames()) {
+                damageContext.setElement(element);
+                float elementDamage = 0;
+                for(var damageStep : mitigationSteps) {
+                    elementDamage = damageStep.apply(elementDamage, mergedStatContainer, livingDefenderStatContainer, damageContext);
+                }
+                totalDamage += elementDamage;
+            }
+        }
+        else {
+            for(var element : ElementalsAPI.getAllElementNames()) {
+                damageContext.setElement(element);
+                float elementDamage = 0;
+                for(var damageStep : mitigationSteps) {
+                    elementDamage = damageStep.apply(elementDamage, livingAttackerStatContainer, livingDefenderStatContainer, damageContext);
+                }
+                totalDamage += elementDamage;
+            }
+        }
+        return totalDamage;
+    }
+
+    @Deprecated
+    public static float dealSpellDamage(SpellDamageEvent e) {
+        return 0;
     }
 }
