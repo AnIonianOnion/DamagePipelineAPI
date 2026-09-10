@@ -3,10 +3,11 @@ package com.anionianonion.damage_pipeline_api;
 import java.util.HashSet;
 import java.util.Set;
 
-public class ValidSources {
+public class ValidSourcesRegistry {
 
-    private static Set<String> validDamageSourceTypeTags = new HashSet<>();
-    public static Set<String> getValidDamageSourceTypeTags() {
+    private static final Set<String> validDamageSourceTypeTags = new HashSet<>();
+
+    public static Set<String> get() {
         return validDamageSourceTypeTags;
     }
 

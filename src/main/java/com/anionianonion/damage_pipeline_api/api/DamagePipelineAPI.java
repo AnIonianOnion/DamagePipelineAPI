@@ -3,7 +3,7 @@ package com.anionianonion.damage_pipeline_api.api;
 import com.anionianonion.advanced_arpg_attributes_api.api.AdvancedARPGAttributesAPI;
 import com.anionianonion.damage_pipeline_api.DamageContext;
 import com.anionianonion.damage_pipeline_api.DamagePipeline;
-import com.anionianonion.damage_pipeline_api.ValidSources;
+import com.anionianonion.damage_pipeline_api.ValidSourcesRegistry;
 import net.minecraft.world.item.Item;
 
 import java.util.ArrayList;
@@ -66,10 +66,10 @@ public class DamagePipelineAPI {
     }
 
     public static Set<String> getValidDamageSourceTypeTags() {
-        return ValidSources.getValidDamageSourceTypeTags();
+        return ValidSourcesRegistry.get();
     }
 
     public static void addValidDamageSourceTypeTag(String newTag) {
-        ValidSources.addValidDamageSourceTypeTag(newTag);
+        ValidSourcesRegistry.addValidDamageSourceTypeTag(newTag);
     }
 }

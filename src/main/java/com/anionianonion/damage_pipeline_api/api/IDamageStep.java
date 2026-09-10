@@ -7,7 +7,7 @@ import net.minecraft.world.entity.LivingEntity;
 
 public interface IDamageStep {
 
-    float apply(float initialDamage, StatContainer attackerStatContainer, StatContainer defenderStatContainer, DamageContext damageContext);
+    float apply(float initialDamage, StatContainer attackerStatContainer, StatContainer defenderStatContainer, LivingEntity livingAttacker, LivingEntity livingDefender, DamageContext damageContext);
 
     //float apply(float initialDamage, Entity attacker, LivingEntity livingDefender, DamageContext damageContext);
 }

@@ -19,7 +19,7 @@ public class DamagePipelineAPIMod
     // Define mod id in a common place for everything to reference
     public static final String MOD_ID = "anionianonions_damage_pipeline_api";
     // Directly reference a slf4j logger
-    private static final Logger LOGGER = LogUtils.getLogger();
+    public static final Logger LOGGER = LogUtils.getLogger();
 
     public DamagePipelineAPIMod(FMLJavaModLoadingContext context)
     {

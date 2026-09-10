@@ -46,6 +46,25 @@ public class DamageContext {
         addTag("damage");
     }
 
+    public void setTags(HashSet<String> damageTags) {
+        HashSet<String> finalSet = new HashSet<>();
+
+        if(ElementalsAPI.getAllElementNames().contains(element) && !damageTags.contains(element)) {
+            finalSet.add(element);
+        }
+
+        if(DamagePipelineAPI.getValidDamageSourceTypeTags().contains(source) && !damageTags.contains(source)) {
+            finalSet.add(source);
+        }
+
+        damageTags.forEach(tag -> {
+            if(AdvancedARPGAttributesAPI.getValidTags().contains(tag) && !ElementalsAPI.getAllElementNames().contains(tag)) finalSet.add(tag);
+        });
+
+        this.tags = finalSet;
+        addTag("damage");
+    }
+
     public void clearTags() {
         this.tags.clear();
         addTag("damage");

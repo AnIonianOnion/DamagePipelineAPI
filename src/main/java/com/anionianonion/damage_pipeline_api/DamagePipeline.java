@@ -3,6 +3,7 @@ package com.anionianonion.damage_pipeline_api;
 import com.anionianonion.advanced_arpg_attributes_api.StatContainer;
 import com.anionianonion.advanced_arpg_attributes_api.api.AdvancedARPGAttributesAPI;
 import com.anionianonion.advanced_arpg_attributes_api.capability.StatContainerCapability;
+import com.anionianonion.damage_pipeline_api.api.DamagePipelineAPI;
 import com.anionianonion.damage_pipeline_api.api.IPreHitDamageStep;
 import com.anionianonion.damage_pipeline_api.api.IDamageStep;
 import com.anionianonion.damage_pipeline_api.capability.DamageContextCapability;
@@ -14,7 +15,6 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraftforge.event.entity.living.LivingAttackEvent;
 import net.minecraftforge.event.entity.living.LivingDamageEvent;
-import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -78,8 +78,9 @@ public class DamagePipeline {
             tagsToReplaceToReplacementMap.put("minion", "self");
             var mergedStatContainer = AdvancedARPGAttributesAPI.getNewStatContainerByRemappingBtoA(minionStatContainer, livingAttackerOrCasterStatContainer, tagsToReplaceToReplacementMap);
 
+            var livingMinion = (LivingEntity) directAttacker;
             for(var preHitStep : preHitDamageSteps) {
-                didHitSucceed = preHitStep.apply(mergedStatContainer, livingDefenderStatContainer, damageContext);
+                didHitSucceed = preHitStep.apply(mergedStatContainer, livingDefenderStatContainer, livingMinion, livingDefender, damageContext);
                 if(!didHitSucceed) break;
             }
         }
@@ -88,13 +89,20 @@ public class DamagePipeline {
             if(!(summoner instanceof LivingEntity livingSummoner)) return true;
 
             var summonerStatContainer = livingSummoner.getCapability(StatContainerCapability.INSTANCE).resolve().orElse(null);
+            //var summonerDamageContext = livingSummoner.getCapability(DamageContextCapability.INSTANCE).resolve().orElse(null);
+
+            if(summonerStatContainer == null //|| summonerDamageContext == null
+            ) return true;
 
             HashMap<String, String> tagsToReplaceToReplacementMap = new HashMap<>();
             tagsToReplaceToReplacementMap.put("minion", "self");
             var mergedStatContainer = AdvancedARPGAttributesAPI.getNewStatContainerByRemappingBtoA(livingAttackerOrCasterStatContainer, summonerStatContainer, tagsToReplaceToReplacementMap);
+            //DamagePipelineAPI.copyDamageContextFromAToB(damageContext, summonerDamageContext);
 
             for(var preHitStep : preHitDamageSteps) {
-                didHitSucceed = preHitStep.apply(mergedStatContainer, livingDefenderStatContainer, damageContext);
+                didHitSucceed = preHitStep.apply(mergedStatContainer, livingDefenderStatContainer, //summonerDamageContext);
+                        livingAttackerOrCaster, livingDefender,
+                        damageContext);
                 if(!didHitSucceed) break;
             }
         }
@@ -111,7 +119,7 @@ public class DamagePipeline {
         }
              */
             for(var preHitStep : preHitDamageSteps) {
-                didHitSucceed = preHitStep.apply(livingAttackerOrCasterStatContainer, livingDefenderStatContainer, damageContext);
+                didHitSucceed = preHitStep.apply(livingAttackerOrCasterStatContainer, livingDefenderStatContainer, livingAttackerOrCaster, livingDefender, damageContext);
                 if(!didHitSucceed) break;
             }
         }
@@ -138,39 +146,52 @@ public class DamagePipeline {
 
         float totalDamage = 0;
 
+        //minion melee
         if(RandomHelpers.isMinion(directAttacker)) {
             var minionStatContainer = directAttacker.getCapability(StatContainerCapability.INSTANCE).resolve().orElse(null);
             if(minionStatContainer == null) return initialDamage;
+
+            DamagePipelineAPIMod.LOGGER.info("direct attacker is livingattacker? " + String.valueOf(directAttacker == livingAttacker));
 
             HashMap<String, String> tagsToReplaceToReplacementMap = new HashMap<>();
             tagsToReplaceToReplacementMap.put("minion", "self");
 
             var mergedStatContainer = AdvancedARPGAttributesAPI.getNewStatContainerByRemappingBtoA(minionStatContainer, livingAttackerStatContainer, tagsToReplaceToReplacementMap);
 
+            var livingMinion = (LivingEntity) directAttacker;
+
             for(var element : ElementalsAPI.getAllElementNames()) {
                 damageContext.setElement(element);
                 float elementDamage = 0;
                 for(var damageStep : mitigationSteps) {
-                    elementDamage = damageStep.apply(elementDamage, mergedStatContainer, livingDefenderStatContainer, damageContext);
+                    elementDamage = damageStep.apply(elementDamage, mergedStatContainer, livingDefenderStatContainer, livingMinion, livingDefender, damageContext);
                 }
                 totalDamage += elementDamage;
             }
         }
+        //minion ranged
         else if (RandomHelpers.isMinion(livingAttacker)) {
             var summoner = SummonManager.getOwner(livingAttacker);
             if(!(summoner instanceof LivingEntity livingSummoner)) return initialDamage;
 
             var summonerStatContainer = livingSummoner.getCapability(StatContainerCapability.INSTANCE).resolve().orElse(null);
+            //var summonerDamageContext = livingSummoner.getCapability(DamageContextCapability.INSTANCE).resolve().orElse(null);
+
+            if(summonerStatContainer == null //|| summonerDamageContext == null
+            ) return initialDamage;
 
             HashMap<String, String> tagsToReplaceToReplacementMap = new HashMap<>();
             tagsToReplaceToReplacementMap.put("minion", "self");
             var mergedStatContainer = AdvancedARPGAttributesAPI.getNewStatContainerByRemappingBtoA(livingAttackerStatContainer, summonerStatContainer, tagsToReplaceToReplacementMap);
+            //DamagePipelineAPI.copyDamageContextFromAToB(damageContext, summonerDamageContext);
 
             for(var element : ElementalsAPI.getAllElementNames()) {
                 damageContext.setElement(element);
                 float elementDamage = 0;
                 for(var damageStep : mitigationSteps) {
-                    elementDamage = damageStep.apply(elementDamage, mergedStatContainer, livingDefenderStatContainer, damageContext);
+                    elementDamage = damageStep.apply(elementDamage, mergedStatContainer, livingDefenderStatContainer, //summonerDamageContext);
+                            livingAttacker, livingDefender,
+                            damageContext);
                 }
                 totalDamage += elementDamage;
             }
@@ -180,16 +201,11 @@ public class DamagePipeline {
                 damageContext.setElement(element);
                 float elementDamage = 0;
                 for(var damageStep : mitigationSteps) {
-                    elementDamage = damageStep.apply(elementDamage, livingAttackerStatContainer, livingDefenderStatContainer, damageContext);
+                    elementDamage = damageStep.apply(elementDamage, livingAttackerStatContainer, livingDefenderStatContainer, livingAttacker, livingDefender, damageContext);
                 }
                 totalDamage += elementDamage;
             }
         }
         return totalDamage;
-    }
-
-    @Deprecated
-    public static float dealSpellDamage(SpellDamageEvent e) {
-        return 0;
     }
 }
