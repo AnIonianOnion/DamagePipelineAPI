@@ -13,6 +13,7 @@ public class DamageContext {
     private String element;
     private String source;
     private float projectileSpeed;
+    private boolean isCrit;
 
 
     public DamageContext() {
@@ -83,6 +84,14 @@ public class DamageContext {
 
     public float getProjectileSpeed() {
         return this.projectileSpeed;
+    }
+
+    public void setCrit(boolean isCrit) {
+        this.isCrit = isCrit;
+    }
+
+    public boolean isCrit() {
+        return this.isCrit;
     }
 
     public String getElement() {
