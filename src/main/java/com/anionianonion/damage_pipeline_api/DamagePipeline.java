@@ -160,12 +160,25 @@ public class DamagePipeline {
 
             var livingMinion = (LivingEntity) directAttacker;
 
-            for(var element : ElementalsAPI.getAllElementNames()) {
-                damageContext.setElement(element);
+            for(var elementId : ElementalsAPI.getAllElementNames()) {
+                damageContext.setElement(elementId);
+                var element = ElementalsAPI.getElement(elementId);
+
+                if(element.getElementCategory() != null) {
+                    var elementCategoryId = element.getElementCategory().getId();
+                    damageContext.addTag(elementCategoryId);
+                }
+
                 float elementDamage = 0;
                 for(var damageStep : mitigationSteps) {
                     elementDamage = damageStep.apply(elementDamage, mergedStatContainer, livingDefenderStatContainer, livingMinion, livingDefender, damageContext);
                 }
+
+                if(element.getElementCategory() != null) {
+                    var elementCategoryId = element.getElementCategory().getId();
+                    damageContext.removeTag(elementCategoryId);
+                }
+
                 totalDamage += elementDamage;
             }
         }

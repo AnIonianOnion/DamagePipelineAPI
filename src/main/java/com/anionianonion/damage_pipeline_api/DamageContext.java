@@ -78,6 +78,10 @@ public class DamageContext {
             this.tags.add(damageTag);
     }
 
+    public void removeTag(String damageTag) {
+        this.tags.remove(damageTag);
+    }
+
     public void setProjectileSpeed(float projectileSpeed) {
         this.projectileSpeed = projectileSpeed;
     }
